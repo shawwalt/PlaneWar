@@ -1,6 +1,6 @@
 import sys
-import resources
-from MainScene import Ui_Form
+import resources_rc
+from Ui_MainScene import Ui_Form
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
