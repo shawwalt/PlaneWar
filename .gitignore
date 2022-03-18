@@ -1,0 +1,4 @@
+# qt:
+*.ui
+*.qrc
+__pycache__
