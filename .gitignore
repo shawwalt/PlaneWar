@@ -2,3 +2,6 @@
 *.ui
 *.qrc
 __pycache__
+images
+backgroundSounds
+.qt_for_python
