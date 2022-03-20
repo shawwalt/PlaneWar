@@ -1,11 +1,20 @@
 {
+    "PATH_WINDOW_ICON": ":/images/windowicon.png",
+    "PATH_BACKGROUND_MAP": ":/images/background.png",
+    "PATH_HEROPLANE_PIC": ":/images/heroplane.png",
+    "PATH_BULLET_PIC": ":/images/bullet.png",
+    "WIN_TITLE": "PLANEWAR",
     "SCENE_WIDTH": 480,
     "SCENE_HEIGHT": 700,
     "PLANE_WIDTH": 102,
     "PLANE_HEIGHT": 126,
     "HERO_INIT_POSX": 240,
     "HERO_INIT_POSY": 550,
-    "WIN_TITLE": "PLANEWAR",
+    "BULLET_WIDTH": 5,
+    "BULLET_HEIGHT": 11,
+    "BULLET_NUM": 30,
+    "BULLET_DIV": 50,
+    "BULLET_MOVE_STEP": 10, 
     "BACKGROUND_ROLL_STEP": 2,
     "FLASH_RATE": 10
 }

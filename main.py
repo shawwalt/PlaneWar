@@ -49,6 +49,7 @@ def load_json(filepath):
 
 
 # 类区
+Config = load_json(':/settings/config.json')
 
 
 class FrontEnd(QMainWindow, Ui_Form):
@@ -60,15 +61,13 @@ class FrontEnd(QMainWindow, Ui_Form):
 
         self.setWindowIcon(QIcon(':/images/windowicon.png'))
 
-        self.config = load_json(':/settings/config.json')
+        self.width = Config["SCENE_WIDTH"].toInt()
 
-        self.width = self.config["SCENE_WIDTH"].toInt()
+        self.height = Config["SCENE_HEIGHT"].toInt()
 
-        self.height = self.config["SCENE_HEIGHT"].toInt()
+        self.move_step = Config["BACKGROUND_ROLL_STEP"].toInt()
 
-        self.move_step = self.config["BACKGROUND_ROLL_STEP"].toInt()
-
-        self.flash_rate = self.config["FLASH_RATE"].toInt()
+        self.flash_rate = Config["FLASH_RATE"].toInt()
         self.init_scene()
         self.start_game()
 
@@ -78,7 +77,7 @@ class FrontEnd(QMainWindow, Ui_Form):
 
     def init_scene(self):
 
-        title = self.config["WIN_TITLE"].toString()
+        title = Config["WIN_TITLE"].toString()
 
         self.resize(self.width, self.height)
 
@@ -90,9 +89,11 @@ class FrontEnd(QMainWindow, Ui_Form):
 
     def init_background(self):
 
-        self.lb_background_1 = Map(':/images/background.png', self)
+        self.lb_background_1 = Map(Config["PATH_BACKGROUND_MAP"].toString(),
+                                   self)
 
-        self.lb_background_2 = Map(':/images/background.png', self)
+        self.lb_background_2 = Map(Config["PATH_BACKGROUND_MAP"].toString(),
+                                   self)
 
         self.lb_background_1.setGeometry(0, -700, self.width, self.height)
 
@@ -100,12 +101,12 @@ class FrontEnd(QMainWindow, Ui_Form):
 
     def init_objects(self):
 
-        self.lb_hero = HeroPlane(':/images/heroplane.png', self)
+        self.lb_hero = HeroPlane(Config["PATH_HEROPLANE_PIC"].toString(), self)
 
-        self.init_hero_param = (self.config["HERO_INIT_POSX"].toInt(),
-                                self.config["HERO_INIT_POSY"].toInt(),
-                                self.config['PLANE_WIDTH'].toInt(),
-                                self.config["PLANE_HEIGHT"].toInt())
+        self.init_hero_param = (Config["HERO_INIT_POSX"].toInt(),
+                                Config["HERO_INIT_POSY"].toInt(),
+                                Config['PLANE_WIDTH'].toInt(),
+                                Config["PLANE_HEIGHT"].toInt())
 
         self.lb_hero.setGeometry(
             self.init_hero_param[0] - int(self.init_hero_param[2] / 2),
@@ -164,12 +165,21 @@ class HeroPlane(QLabel):
 
         super(HeroPlane, self).__init__(*args, **kwargs)
 
-        self.shoot = False
-
+        self.shooting = False
+        self.shootInterval = Config['BULLET_DIV'].toInt()
+        self.shootRecorder = self.shootInterval
+        self.bullets_stack_point = [0, 0]
+        self.bullets = [
+            Bullet(Config["PATH_BULLET_PIC"].toString(),
+                   Config['BULLET_MOVE_STEP'].toInt())
+            for i in range(Config['BULLET_NUM'].toInt())
+        ]
         self.setPixmap(QPixmap(filepath))
 
     def shoot(self):
-        pass
+        if self.shootRecorder == self.shootInterval:
+            self.bullets[self.bullets_stack_point[1]] = True
+            self.bullets_stack_point[1] = self.bullets_stack_point[1] + 1
 
 
 class Map(QLabel):
@@ -181,11 +191,23 @@ class Map(QLabel):
 
 
 class Bullet(QLabel):
-    def __init__(self, filepath, *args, **kwargs):
+    def __init__(self, filepath, speed, *args, **kwargs):
 
         super(Bullet, self).__init__(*args, **kwargs)
 
-        self.setPixmap(filepath)
+        self.setPixmap(QPixmap(filepath))
+        self.speed = speed
+        self.isFree = True
+        self.width = Config["BULLET_WIDTH"].toInt()
+        self.height = Config["BULLET_HEIGHT"].toInt()
+
+    def update_position(self):
+        if isFree is False:
+            x, y = self.pos().x(), self.pos().y()
+            y = y - self.speed
+            self.move(x, y)
+            if (y < -self.height):
+                self.isFree = True
 
 
 if __name__ == '__main__':
