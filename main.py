@@ -118,12 +118,15 @@ class FrontEnd(QMainWindow, Ui_Form):
 
     def start_game(self):
 
-        self.timer = QTimer()
+        self.timer_background = QTimer()
+        self.timer_shoot = QTimer()
 
-        self.timer.timeout.connect(self.flash_screen)
+        self.timer_background.setInterval(Config['FLASH_RATE'].toInt())
+        self.timer_shoot.setInterval(Config['BULLET_SHOOT_RATE'].toInt())
+        self.timer_background.timeout.connect(self.flash_screen)
+        self.timer_shoot.timeout.connect(self.lb_hero.shoot)
 
-        self.timer.setInterval(self.flash_rate)
-        self.timer.start()
+        self.timer_background.start()
 
     def flash_screen(self):
 
@@ -161,7 +164,10 @@ class FrontEnd(QMainWindow, Ui_Form):
                           evt.y() - int(self.init_hero_param[3] / 2))
 
     def mousePressEvent(self, evt):
-        self.lb_hero.shoot()
+        self.timer_shoot.start()
+
+    def mouseReleaseEvent(self, evt):
+        self.timer_shoot.stop()
 
 
 class HeroPlane(QLabel):
