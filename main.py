@@ -159,6 +159,8 @@ class FrontEnd(QMainWindow, Ui_Form):
     def mouseMoveEvent(self, evt):
         self.lb_hero.move(evt.x() - int(self.init_hero_param[2] / 2),
                           evt.y() - int(self.init_hero_param[3] / 2))
+
+    def mousePressEvent(self, evt):
         self.lb_hero.shoot()
 
 
