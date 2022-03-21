@@ -101,7 +101,8 @@ class FrontEnd(QMainWindow, Ui_Form):
 
     def init_objects(self):
 
-        self.lb_hero = HeroPlane(Config["PATH_HEROPLANE_PIC"].toString(), self)
+        self.lb_hero = HeroPlane(Config["PATH_HEROPLANE_PIC"].toString(), self,
+                                 self)
 
         self.init_hero_param = (Config["HERO_INIT_POSX"].toInt(),
                                 Config["HERO_INIT_POSY"].toInt(),
@@ -158,28 +159,40 @@ class FrontEnd(QMainWindow, Ui_Form):
     def mouseMoveEvent(self, evt):
         self.lb_hero.move(evt.x() - int(self.init_hero_param[2] / 2),
                           evt.y() - int(self.init_hero_param[3] / 2))
+        self.lb_hero.shoot()
 
 
 class HeroPlane(QLabel):
-    def __init__(self, filepath, *args, **kwargs):
+    def __init__(self, filepath, map, *args, **kwargs):
 
         super(HeroPlane, self).__init__(*args, **kwargs)
 
         self.shooting = False
         self.shootInterval = Config['BULLET_DIV'].toInt()
         self.shootRecorder = self.shootInterval
-        self.bullets_stack_point = [0, 0]
+        self.bullets_stack_point = 0
         self.bullets = [
             Bullet(Config["PATH_BULLET_PIC"].toString(),
-                   Config['BULLET_MOVE_STEP'].toInt())
+                   Config['BULLET_MOVE_STEP'].toInt(), map)
             for i in range(Config['BULLET_NUM'].toInt())
         ]
         self.setPixmap(QPixmap(filepath))
 
     def shoot(self):
         if self.shootRecorder == self.shootInterval:
-            self.bullets[self.bullets_stack_point[1]] = True
-            self.bullets_stack_point[1] = self.bullets_stack_point[1] + 1
+            self.shootRecorder = 0
+            # 将当前子弹状态设为占用中
+            self.bullets[self.bullets_stack_point].isFree = False
+            # 初始化子弹位置为飞机中心位置
+            self.bullets[self.bullets_stack_point].move(
+                self.pos().x() + int(Config['PLANE_WIDTH'].toInt() / 2),
+                self.pos().y())
+            # 启动子弹内置时钟，自动更新位置
+            self.bullets[self.bullets_stack_point].timer.start()
+            self.bullets_stack_point = self.bullets_stack_point + 1
+            if self.bullets_stack_point > Config['BULLET_NUM'].toInt() - 1:
+                self.bullets_stack_point = 0
+        self.shootRecorder = self.shootRecorder + 1
 
 
 class Map(QLabel):
@@ -198,15 +211,21 @@ class Bullet(QLabel):
         self.setPixmap(QPixmap(filepath))
         self.speed = speed
         self.isFree = True
+        self.timer = QTimer()
+        self.timer.setInterval(3)
+        self.timer.timeout.connect(self.update_position)
         self.width = Config["BULLET_WIDTH"].toInt()
         self.height = Config["BULLET_HEIGHT"].toInt()
+        self.setGeometry(0, -Config['SCENE_HEIGHT'].toInt(), self.width,
+                         self.height)
 
-    def update_position(self):
-        if isFree is False:
+    def update_position(self) -> bool:
+        if self.isFree is False:
             x, y = self.pos().x(), self.pos().y()
             y = y - self.speed
             self.move(x, y)
             if (y < -self.height):
+                self.timer.stop()
                 self.isFree = True
 
 
