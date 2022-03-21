@@ -1,5 +1,7 @@
 import sys
 
+import random
+
 import resources_rc
 
 from Ui_MainScene import Ui_Form
@@ -79,7 +81,7 @@ class FrontEnd(QMainWindow, Ui_Form):
 
         title = Config["WIN_TITLE"].toString()
 
-        self.resize(self.width, self.height)
+        self.setFixedSize(self.width, self.height)
 
         self.setWindowTitle(title)
 
@@ -191,7 +193,7 @@ class HeroPlane(QLabel):
             self.shootRecorder = 0
             # 将当前子弹状态设为占用中
             self.bullets[self.bullets_stack_point].isFree = False
-            # 初始化子弹位置为飞机中心位置
+            # 初始化子弹位置为飞机头部位置
             self.bullets[self.bullets_stack_point].move(
                 self.pos().x() + int(Config['PLANE_WIDTH'].toInt() / 2),
                 self.pos().y())
@@ -235,6 +237,36 @@ class Bullet(QLabel):
             if (y < -self.height):
                 self.timer.stop()
                 self.isFree = True
+
+
+class EnemyPlane(QLabel):
+    def __init__(self, filepath, *args, **kwargs):
+        super(EnemyPlane, self).__init__(*args, **kwargs)
+        self.setPixmap(QPixmap(filepath))
+
+        self.timer = QTimer()
+        self.isFree = True,
+        self.interval = Config['ENEMY_INTERVAL'].toInt()
+        self.bullets = [
+            Bullet(Config['PATH_MISSILE_ENEMY_PIC'].toString(),
+                   Config['ENEMY_BULLET_SPEED'].toInt())
+            for i in range(Config['ENEMY_BULLET_NUM'].toInt())
+        ]
+        self.speed = Config['ENEMY_SPEED'].toInt()
+        self.width = Config['ENEMY_WIDTH'].toInt()
+        self.height = Config['ENEMY_HEIGHT'].toInt()
+
+    def update_position(self):
+        if self.isFree is True:
+            # 初始化敌机位置
+            self.move(
+                random.randint(self.width, Config['SCENE_WIDTH'].toInt()) -
+                self.width,
+                random.randint(self.height, Config['SCENE_HEIGHT'].toInt()) +
+                self.height)
+        else:
+            # 更新路线策略
+            pass
 
 
 if __name__ == '__main__':
