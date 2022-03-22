@@ -60,19 +60,14 @@ class FrontEnd(QMainWindow, Ui_Form):
         super(FrontEnd, self).__init__(*args, **kwargs)
 
         self.setupUi(self)
-
         self.setWindowIcon(QIcon(Config['PATH_WINDOW_ICON'].toString()))
-
         self.width = Config["SCENE_WIDTH"].toInt()
-
         self.height = Config["SCENE_HEIGHT"].toInt()
-
         self.move_step = Config["BACKGROUND_ROLL_STEP"].toInt()
-
         self.flash_rate = Config["FLASH_RATE"].toInt()
+
         self.init_scene()
         self.start_game()
-
         self.show()
 
     # 界面初始化
@@ -82,83 +77,38 @@ class FrontEnd(QMainWindow, Ui_Form):
         title = Config["WIN_TITLE"].toString()
 
         self.setFixedSize(self.width, self.height)
-
         self.setWindowTitle(title)
 
         self.init_background()
-
         self.init_objects()
 
     def init_background(self):
 
-        self.lb_background_1 = Map(Config["PATH_BACKGROUND_MAP"].toString(),
+        self.lb_background_1 = Map(Config["PATH_BACKGROUND_MAP"].toString(), 0,
                                    self)
-
         self.lb_background_2 = Map(Config["PATH_BACKGROUND_MAP"].toString(),
-                                   self)
-
+                                   self.height, self)
         self.lb_background_1.setGeometry(0, -700, self.width, self.height)
-
         self.lb_background_2.setGeometry(0, 0, self.width, self.height)
 
     def init_objects(self):
 
         self.lb_hero = HeroPlane(Config["PATH_HEROPLANE_PIC"].toString(), self,
                                  self)
-
         self.init_hero_param = (Config["HERO_INIT_POSX"].toInt(),
                                 Config["HERO_INIT_POSY"].toInt(),
                                 Config['PLANE_WIDTH'].toInt(),
                                 Config["PLANE_HEIGHT"].toInt())
-
         self.lb_hero.setGeometry(
             self.init_hero_param[0] - int(self.init_hero_param[2] / 2),
             self.init_hero_param[1], self.init_hero_param[2],
             self.init_hero_param[3])
 
     # 响应方法区
-
     def start_game(self):
 
-        self.timer_background = QTimer()
-        self.timer_shoot = QTimer()
-
-        self.timer_background.setInterval(Config['FLASH_RATE'].toInt())
-        self.timer_shoot.setInterval(Config['BULLET_SHOOT_RATE'].toInt())
-        self.timer_background.timeout.connect(self.flash_screen)
-        self.timer_shoot.timeout.connect(self.lb_hero.shoot)
-
-        self.timer_background.start()
-
-    def flash_screen(self):
-
-        self.updata_background_map()
-
-    def updata_background_map(self):
-
-        y1 = self.lb_background_1.pos().y()
-
-        y2 = self.lb_background_2.pos().y()
-
-        if y1 <= 0:
-
-            y1 = y1 + self.move_step
-
-            self.lb_background_1.move(0, y1)
-
-        else:
-
-            self.lb_background_1.move(0, -self.height)
-
-        if y2 <= self.height:
-
-            y2 = y2 + self.move_step
-
-            self.lb_background_2.move(0, y2)
-
-        else:
-
-            self.lb_background_2.move(0, 0)
+        self.lb_background_1.timer.start()
+        self.lb_background_2.timer.start()
 
     # 重写系统Evt函数
     def mouseMoveEvent(self, evt):
@@ -166,10 +116,12 @@ class FrontEnd(QMainWindow, Ui_Form):
                           evt.y() - int(self.init_hero_param[3] / 2))
 
     def mousePressEvent(self, evt):
-        self.timer_shoot.start()
+        self.lb_hero.move(evt.x() - int(self.init_hero_param[2] / 2),
+                          evt.y() - int(self.init_hero_param[3] / 2))
+        self.lb_hero.timer_shoot.start()
 
     def mouseReleaseEvent(self, evt):
-        self.timer_shoot.stop()
+        self.lb_hero.timer_shoot.stop()
 
 
 class HeroPlane(QLabel):
@@ -178,6 +130,7 @@ class HeroPlane(QLabel):
         super(HeroPlane, self).__init__(*args, **kwargs)
 
         self.shooting = False
+        self.timer_shoot = QTimer()
         self.shootInterval = Config['BULLET_DIV'].toInt()
         self.shootRecorder = self.shootInterval
         self.bullets_stack_point = 0
@@ -187,6 +140,9 @@ class HeroPlane(QLabel):
             for i in range(Config['BULLET_NUM'].toInt())
         ]
         self.setPixmap(QPixmap(filepath))
+
+        self.timer_shoot.setInterval(Config['BULLET_SHOOT_RATE'].toInt())
+        self.timer_shoot.timeout.connect(self.shoot)
 
     def shoot(self):
         if self.shootRecorder == self.shootInterval:
@@ -206,11 +162,30 @@ class HeroPlane(QLabel):
 
 
 class Map(QLabel):
-    def __init__(self, filepath, *args, **kwargs):
+    def __init__(self, filepath, threshhold, *args, **kwargs):
 
         super(Map, self).__init__(*args, **kwargs)
 
         self.setPixmap(QPixmap(filepath))
+        self.timer = QTimer()
+        self.move_step = Config["BACKGROUND_ROLL_STEP"].toInt()
+        self.trigger_threshhold = threshhold
+        self.width = Config["SCENE_WIDTH"].toInt()
+        self.height = Config["SCENE_HEIGHT"].toInt()
+
+        self.timer.setInterval(Config['FLASH_RATE'].toInt())
+        self.timer.timeout.connect(self.update_position)
+
+    def update_position(self):
+
+        pos_y = self.pos().y()
+
+        if pos_y <= self.trigger_threshhold:
+            pos_y = pos_y + self.move_step
+            self.move(0, pos_y)
+
+        else:
+            self.move(0, self.pos().y() - self.height)
 
 
 class Bullet(QLabel):
