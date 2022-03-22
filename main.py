@@ -1,15 +1,10 @@
 import sys
-
 import random
-
 import resources_rc
 
 from Ui_MainScene import Ui_Form
-
 from PyQt5.QtCore import *
-
 from PyQt5.QtWidgets import *
-
 from PyQt5.QtGui import *
 '''
 
