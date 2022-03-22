@@ -61,16 +61,28 @@ class FrontEnd(QMainWindow, Ui_Form):
 
         self.setupUi(self)
         self.setWindowIcon(QIcon(Config['PATH_WINDOW_ICON'].toString()))
+
+        # 面板参数
+        self.start = False
         self.width = Config["SCENE_WIDTH"].toInt()
         self.height = Config["SCENE_HEIGHT"].toInt()
         self.move_step = Config["BACKGROUND_ROLL_STEP"].toInt()
         self.flash_rate = Config["FLASH_RATE"].toInt()
 
+        # 其他参数初始化
+        self.enemy_1_stack_point = 0
+        self.enemy_1_div = Config['ENEMY_DIV'].toInt()
+        self.enemy_1_recorder = self.enemy_1_div
+
+        # 主面板时钟设置
+        self.main_timer = QTimer()
+        self.main_timer.setInterval(100)
+        self.main_timer.timeout.connect(self.add_enemy_1)
+
+        # 初始话游戏操作
         self.init_scene()
         self.start_game()
         self.show()
-
-    # 界面初始化
 
     def init_scene(self):
 
@@ -88,11 +100,12 @@ class FrontEnd(QMainWindow, Ui_Form):
                                    self)
         self.lb_background_2 = Map(Config["PATH_BACKGROUND_MAP"].toString(),
                                    self.height, self)
-        self.lb_background_1.setGeometry(0, -700, self.width, self.height)
+        self.lb_background_1.setGeometry(0, -698, self.width, self.height)
         self.lb_background_2.setGeometry(0, 0, self.width, self.height)
 
     def init_objects(self):
 
+        # 设置主角机
         self.lb_hero = HeroPlane(Config["PATH_HEROPLANE_PIC"].toString(), self,
                                  self)
         self.init_hero_param = (Config["HERO_INIT_POSX"].toInt(),
@@ -104,11 +117,29 @@ class FrontEnd(QMainWindow, Ui_Form):
             self.init_hero_param[1], self.init_hero_param[2],
             self.init_hero_param[3])
 
+        # 设置敌机小兵
+        self.enemy_1s = [
+            EnemyPlane(':/images/enemy_1.png', self)
+            for i in range(Config['ENEMY_NUM'].toInt())
+        ]
+
     # 响应方法区
     def start_game(self):
 
         self.lb_background_1.timer.start()
         self.lb_background_2.timer.start()
+        self.main_timer.start()
+
+    def add_enemy_1(self):
+        pres_pos_isFree = self.enemy_1s[self.enemy_1_stack_point].isFree
+        if self.enemy_1_recorder == self.enemy_1_div and pres_pos_isFree:
+            self.enemy_1s[self.enemy_1_stack_point].timer_move.start()
+            self.enemy_1_recorder = 0
+            self.enemy_1_stack_point += 1
+            if self.enemy_1_stack_point >= Config['ENEMY_NUM'].toInt():
+                self.enemy_1_stack_point = 0
+        elif self.enemy_1_recorder != self.enemy_1_div:
+            self.enemy_1_recorder += 1
 
     # 重写系统Evt函数
     def mouseMoveEvent(self, evt):
@@ -129,8 +160,12 @@ class HeroPlane(QLabel):
 
         super(HeroPlane, self).__init__(*args, **kwargs)
 
+        # 存储对象属性的变量
+
+        # 存储对象当前状态的变量
         self.shooting = False
-        self.timer_shoot = QTimer()
+        self.isBroken = False
+
         self.shootInterval = Config['BULLET_DIV'].toInt()
         self.shootRecorder = self.shootInterval
         self.bullets_stack_point = 0
@@ -141,6 +176,8 @@ class HeroPlane(QLabel):
         ]
         self.setPixmap(QPixmap(filepath))
 
+        # 控制对象行动的时钟
+        self.timer_shoot = QTimer()
         self.timer_shoot.setInterval(Config['BULLET_SHOOT_RATE'].toInt())
         self.timer_shoot.timeout.connect(self.shoot)
 
@@ -170,8 +207,8 @@ class Map(QLabel):
         self.timer = QTimer()
         self.move_step = Config["BACKGROUND_ROLL_STEP"].toInt()
         self.trigger_threshhold = threshhold
-        self.width = Config["SCENE_WIDTH"].toInt()
-        self.height = Config["SCENE_HEIGHT"].toInt()
+        self.width = Config['SCENE_WIDTH'].toInt()
+        self.height = Config['SCENE_HEIGHT'].toInt()
 
         self.timer.setInterval(Config['FLASH_RATE'].toInt())
         self.timer.timeout.connect(self.update_position)
@@ -180,7 +217,7 @@ class Map(QLabel):
 
         pos_y = self.pos().y()
 
-        if pos_y <= self.trigger_threshhold:
+        if pos_y < self.trigger_threshhold:
             pos_y = pos_y + self.move_step
             self.move(0, pos_y)
 
@@ -219,29 +256,42 @@ class EnemyPlane(QLabel):
         super(EnemyPlane, self).__init__(*args, **kwargs)
         self.setPixmap(QPixmap(filepath))
 
-        self.timer = QTimer()
-        self.isFree = True,
+        # 对象属性变量
+        self.width = Config['ENEMY_WIDTH'].toInt()
+        self.height = Config['ENEMY_HEIGHT'].toInt()
+        self.speed = Config['ENEMY_SPEED'].toInt()
         self.interval = Config['ENEMY_INTERVAL'].toInt()
         self.bullets = [
             Bullet(Config['PATH_MISSILE_ENEMY_PIC'].toString(),
                    Config['ENEMY_BULLET_SPEED'].toInt())
             for i in range(Config['ENEMY_BULLET_NUM'].toInt())
         ]
-        self.speed = Config['ENEMY_SPEED'].toInt()
-        self.width = Config['ENEMY_WIDTH'].toInt()
-        self.height = Config['ENEMY_HEIGHT'].toInt()
+
+        # 对象状态变量
+        self.isFree = True
+        self.shooting = False
+
+        # 对象运动时钟
+        self.timer_move = QTimer()
+        self.timer_move.setInterval(self.interval)
+        self.timer_move.timeout.connect(self.update_position)
+
+        # 初始化操作
+        self.move(0, -self.height)
 
     def update_position(self):
         if self.isFree is True:
             # 初始化敌机位置
-            self.move(
-                random.randint(self.width, Config['SCENE_WIDTH'].toInt()) -
-                self.width,
-                random.randint(self.height, Config['SCENE_HEIGHT'].toInt()) +
-                self.height)
+            init_x = random.randint(self.width,
+                                    Config['SCENE_WIDTH'].toInt() - self.width)
+            self.move(init_x, -self.height)
+            self.isFree = False
         else:
             # 更新路线策略
-            pass
+            pos_x, pos_y = self.pos().x(), self.pos().y()
+            self.move(pos_x, pos_y + self.speed)
+            if pos_y > Config['SCENE_HEIGHT'].toInt():
+                self.isFree = True
 
 
 if __name__ == '__main__':
