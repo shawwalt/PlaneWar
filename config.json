@@ -1,5 +1,5 @@
 {
-    "PATH_WINDOW_ICON": ":/images/windowicon.png",
+    "PATH_WINDOW_ICON": ":/images/windowicon.jpg",
     "PATH_BACKGROUND_MAP": ":/images/background.png",
     "PATH_HEROPLANE_PIC": ":/images/heroplane.png",
     "PATH_BULLET_PIC": ":/images/bullet.png",
@@ -16,8 +16,8 @@
     "BULLET_HEIGHT": 11,
     "BULLET_NUM": 60,
     "BULLET_DIV": 10,
-    "BULLET_SHOOT_RATE": 2, 
-    "BULLET_MOVE_STEP": 10, 
+    "BULLET_SHOOT_RATE": 2,
+    "BULLET_MOVE_STEP": 10,
     "ENEMY_NUM": 20,
     "ENEMY_WIDTH": 57,
     "ENEMY_HEIGHT": 43,

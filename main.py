@@ -61,7 +61,7 @@ class FrontEnd(QMainWindow, Ui_Form):
 
         self.setupUi(self)
 
-        self.setWindowIcon(QIcon(':/images/windowicon.png'))
+        self.setWindowIcon(QIcon(Config['PATH_WINDOW_ICON'].toString()))
 
         self.width = Config["SCENE_WIDTH"].toInt()
 
